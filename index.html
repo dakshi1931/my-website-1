@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VitalPulse | Personal Health & Wellness Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased">
+
+    <!-- Navigation Bar -->
+    <nav class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-emerald-200">
+                        <i class="fa-solid fa-heart-pulse text-xl"></i>
+                    </div>
+                    <span class="text-xl font-extrabold tracking-tight text-slate-900">Vital<span class="text-emerald-600">Pulse</span></span>
+                </div>
+
+                <div class="hidden md:flex items-center space-x-8 text-sm font-semibold text-slate-600">
+                    <a href="#dashboard" class="hover:text-emerald-600 transition">Health Tracker</a>
+                    <a href="#analytics" class="hover:text-emerald-600 transition">Analytics</a>
+                    <a href="#bmi-tool" class="hover:text-emerald-600 transition">BMI & Vitals</a>
+                    <a href="#contact" class="hover:text-emerald-600 transition">Contact</a>
+                </div>
+
+                <!-- Auth State Container -->
+                <div id="auth-nav-container" class="flex items-center gap-3">
+                    <button onclick="openAuthModal('login')" class="text-sm font-semibold text-slate-700 hover:text-emerald-600 px-3 py-2 transition">Log In</button>
+                    <button onclick="openAuthModal('signup')" class="text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl shadow-sm transition">Sign Up Free</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Banner -->
+    <header class="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white py-14 px-4">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-10">
+            <div class="max-w-2xl">
+                <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-4 border border-emerald-500/30">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Smart Health Monitoring
+                </span>
+                <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight mb-4">
+                    Master Your Daily Health, <span class="text-emerald-400">One Metric at a Time.</span>
+                </h1>
+                <p class="text-slate-300 text-lg mb-8 leading-relaxed">
+                    Track hydration, calorie intake, sleep recovery, and daily steps in real time. Sign in with Google to sync and save your personal wellness milestones.
+                </p>
+                <div class="flex flex-wrap gap-4">
+                    <a href="#dashboard" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-950/50 transition flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line"></i> Open Live Tracker
+                    </a>
+                    <button onclick="triggerGoogleAuth()" class="bg-white hover:bg-slate-100 text-slate-900 font-semibold px-6 py-3.5 rounded-xl transition flex items-center gap-3">
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-5 h-5">
+                        Continue with Google
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Wellness Score Card -->
+            <div class="bg-white/10 backdrop-blur-md border border-white/15 p-6 rounded-2xl w-full max-w-sm">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-sm font-medium text-slate-300">Daily Wellness Score</span>
+                    <span id="date-badge" class="text-xs bg-white/10 px-2.5 py-1 rounded-lg text-emerald-300 font-semibold">Today</span>
+                </div>
+                <div class="flex items-end gap-3 mb-4">
+                    <span id="wellness-score" class="text-5xl font-extrabold text-white">0%</span>
+                    <span class="text-sm text-emerald-400 font-medium mb-1.5">of daily targets met</span>
+                </div>
+                <div class="w-full bg-slate-700 rounded-full h-3 overflow-hidden mb-4">
+                    <div id="wellness-bar" class="bg-gradient-to-r from-emerald-400 to-teal-300 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <p id="user-greeting" class="text-xs text-slate-300">Tracking as <strong>Guest</strong>. Log in to save data permanently.</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Health Tracking Dashboard -->
+    <main id="dashboard" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div>
+                <h2 class="text-2xl font-bold text-slate-900">Daily Health Vitals</h2>
+                <p class="text-sm text-slate-500">Log your activities below. Progress updates automatically.</p>
+            </div>
+            <button onclick="resetDailyMetrics()" class="self-start sm:self-auto text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 px-3.5 py-2 rounded-lg transition">
+                <i class="fa-solid fa-rotate-right mr-1"></i> Reset Today's Logs
+            </button>
+        </div>
+
+        <!-- 4 Core Metric Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            
+            <!-- 1. Water Intake -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-droplet"></i>
+                    </div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-sky-600 bg-sky-50 px-2.5 py-1 rounded-md">Hydration</span>
+                </div>
+                <h3 class="text-slate-500 text-sm font-medium">Water Intake</h3>
+                <div class="flex items-baseline gap-1.5 my-1">
+                    <span id="water-val" class="text-3xl font-extrabold text-slate-900">0</span>
+                    <span class="text-sm text-slate-400 font-semibold">/ 3,000 ml</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-2 my-3">
+                    <div id="water-bar" class="bg-sky-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mt-4">
+                    <button onclick="updateMetric('water', 250)" class="bg-sky-50 hover:bg-sky-100 text-sky-700 font-semibold text-xs py-2 rounded-lg transition">+250 ml (Glass)</button>
+                    <button onclick="updateMetric('water', 500)" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold text-xs py-2 rounded-lg transition">+500 ml (Bottle)</button>
+                </div>
+            </div>
+
+            <!-- 2. Calories Intake -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-fire-flame-curved"></i>
+                    </div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-2.5 py-1 rounded-md">Nutrition</span>
+                </div>
+                <h3 class="text-slate-500 text-sm font-medium">Calories Consumed</h3>
+                <div class="flex items-baseline gap-1.5 my-1">
+                    <span id="calories-val" class="text-3xl font-extrabold text-slate-900">0</span>
+                    <span class="text-sm text-slate-400 font-semibold">/ 2,200 kcal</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-2 my-3">
+                    <div id="calories-bar" class="bg-amber-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <div class="flex gap-2 mt-4">
+                    <input type="number" id="cal-input" placeholder="kcal" class="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-amber-500">
+                    <button onclick="addCustomMetric('calories', 'cal-input')" class="bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs px-4 py-2 rounded-lg transition">Add</button>
+                </div>
+            </div>
+
+            <!-- 3. Sleep Duration -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-moon"></i>
+                    </div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md">Recovery</span>
+                </div>
+                <h3 class="text-slate-500 text-sm font-medium">Sleep Duration</h3>
+                <div class="flex items-baseline gap-1.5 my-1">
+                    <span id="sleep-val" class="text-3xl font-extrabold text-slate-900">0</span>
+                    <span class="text-sm text-slate-400 font-semibold">/ 8.0 hrs</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-2 my-3">
+                    <div id="sleep-bar" class="bg-indigo-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <div class="flex gap-2 mt-4">
+                    <input type="number" step="0.5" id="sleep-input" placeholder="Hours (e.g. 7.5)" class="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500">
+                    <button onclick="setCustomMetric('sleep', 'sleep-input')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-4 py-2 rounded-lg transition">Log</button>
+                </div>
+            </div>
+
+            <!-- 4. Daily Steps -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-shoe-prints"></i>
+                    </div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md">Activity</span>
+                </div>
+                <h3 class="text-slate-500 text-sm font-medium">Steps Walked</h3>
+                <div class="flex items-baseline gap-1.5 my-1">
+                    <span id="steps-val" class="text-3xl font-extrabold text-slate-900">0</span>
+                    <span class="text-sm text-slate-400 font-semibold">/ 10,000</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-2 my-3">
+                    <div id="steps-bar" class="bg-emerald-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mt-4">
+                    <button onclick="updateMetric('steps', 1000)" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-xs py-2 rounded-lg transition">+1,000 Steps</button>
+                    <button onclick="updateMetric('steps', 2500)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2 rounded-lg transition">+2,500 Steps</button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Analytics & BMI Section -->
+        <div id="analytics" class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+            
+            <!-- Weekly Activity Chart -->
+            <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">Weekly Wellness Trends</h3>
+                        <p class="text-xs text-slate-500">Steps & Hydration consistency over the last 7 days</p>
+                    </div>
+                    <span class="text-xs font-semibold bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full">Live Sync</span>
+                </div>
+                <div class="h-64">
+                    <canvas id="healthChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Interactive BMI & Heart Rate Zone Calculator -->
+            <div id="bmi-tool" class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900 mb-1">BMI & Health Index</h3>
+                    <p class="text-xs text-slate-500 mb-5">Calculate your Body Mass Index and ideal daily water target.</p>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Weight (kg)</label>
+                            <input type="number" id="bmi-weight" value="70" class="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Height (cm)</label>
+                            <input type="number" id="bmi-height" value="175" class="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <button onclick="calculateBMI()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm py-2.5 rounded-xl transition">
+                            Calculate Health Index
+                        </button>
+                    </div>
+                </div>
+
+                <div id="bmi-result-box" class="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                    <span class="text-xs text-slate-500 block">Your BMI Score</span>
+                    <span id="bmi-score" class="text-2xl font-extrabold text-emerald-600">22.9</span>
+                    <span id="bmi-category" class="block text-xs font-bold text-slate-700 mt-0.5">Healthy Weight</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Us Section -->
+        <section id="contact" class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-5">
+                <div class="lg:col-span-2 bg-emerald-700 text-white p-8 sm:p-10 flex flex-col justify-between">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-200">Support & Inquiries</span>
+                        <h2 class="text-3xl font-extrabold mt-2 mb-4">Get in Touch With Us</h2>
+                        <p class="text-emerald-100 text-sm leading-relaxed mb-8">
+                            Have questions about your wellness metrics, nutrition plans, or account support? Reach out directly to our health team.
+                        </p>
+                        
+                        <div class="space-y-4 text-sm">
+                            <div class="flex items-center gap-3.5">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center">
+                                    <i class="fa-solid fa-envelope"></i>
+                                </div>
+                                <div>
+                                    <span class="block text-xs text-emerald-200">Direct Contact Email</span>
+                                    <a href="mailto:dakshsagwan1919@gmail.com" class="font-bold hover:underline">dakshsagwan1919@gmail.com</a>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3.5">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center">
+                                    <i class="fa-solid fa-clock"></i>
+                                </div>
+                                <div>
+                                    <span class="block text-xs text-emerald-200">Response Time</span>
+                                    <span class="font-semibold">Within 24 Hours</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-10 pt-6 border-t border-emerald-600 text-xs text-emerald-200">
+                        &copy; 2026 VitalPulse Health Systems. All rights reserved.
+                    </div>
+                </div>
+
+                <div class="lg:col-span-3 p-8 sm:p-10">
+                    <form onsubmit="handleContactSubmit(event)" class="space-y-5">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">Full Name</label>
+                                <input type="text" id="contact-name" required placeholder="John Doe" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">Your Email</label>
+                                <input type="email" id="contact-email" required placeholder="you@example.com" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5">Topic</label>
+                            <select id="contact-topic" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-white">
+                                <option>General Health Inquiry</option>
+                                <option>Account & Google Sync Support</option>
+                                <option>Nutrition & Fitness Guidance</option>
+                                <option>Feedback & Feature Request</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5">Message</label>
+                            <textarea id="contact-message" rows="4" required placeholder="How can we help you achieve your health goals?" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500"></textarea>
+                        </div>
+                        <div class="flex flex-wrap items-center justify-between gap-4">
+                            <span class="text-xs text-slate-500">Recipient: <strong class="text-slate-700">dakshsagwan1919@gmail.com</strong></span>
+                            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-sm transition flex items-center gap-2">
+                                <i class="fa-solid fa-paper-plane"></i> Send Message
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Login / Signup Modal -->
+    <div id="auth-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl relative animate-fade-in">
+            <button onclick="closeAuthModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-700 text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-3 text-xl">
+                    <i class="fa-solid fa-heart-pulse"></i>
+                </div>
+                <h3 id="modal-title" class="text-2xl font-extrabold text-slate-900">Welcome Back</h3>
+                <p id="modal-subtitle" class="text-xs text-slate-500 mt-1">Sign in to sync your health tracker across devices</p>
+            </div>
+
+            <!-- Google OAuth Button -->
+            <button onclick="triggerGoogleAuth()" class="w-full border border-slate-300 hover:bg-slate-50 text-slate-800 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-3 transition mb-5 shadow-sm">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-5 h-5">
+                <span id="google-btn-text">Continue with Google</span>
+            </button>
+
+            <div class="relative flex py-2 items-center mb-5">
+                <div class="flex-grow border-t border-slate-200"></div>
+                <span class="flex-shrink mx-3 text-xs text-slate-400 uppercase font-semibold">or with email</span>
+                <div class="flex-grow border-t border-slate-200"></div>
+            </div>
+
+            <!-- Email Auth Form -->
+            <form onsubmit="handleEmailAuth(event)" class="space-y-4">
+                <div id="name-field-group" class="hidden">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Full Name</label>
+                    <input type="text" id="auth-name" placeholder="Daksh Sagwan" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
+                    <input type="email" id="auth-email" required placeholder="you@gmail.com" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Password</label>
+                    <input type="password" id="auth-password" required placeholder="••••••••" class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-emerald-500">
+                </div>
+                <button type="submit" id="auth-submit-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow-md shadow-emerald-200">
+                    Log In
+                </button>
+            </form>
+
+            <p class="text-center text-xs text-slate-500 mt-6">
+                <span id="auth-switch-text">Don't have an account?</span>
+                <button type="button" onclick="toggleAuthMode()" id="auth-switch-btn" class="text-emerald-600 font-bold hover:underline ml-1">Sign Up</button>
+            </p>
+        </div>
+    </div>
+
+    <!-- Google Account Picker Simulation Modal (For Realistic Google Sign-In UX) -->
+    <div id="google-picker-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200">
+            <div class="flex items-center gap-2 mb-4">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-5 h-5">
+                <span class="text-sm font-semibold text-slate-600">Sign in with Google</span>
+            </div>
+            <h4 class="text-lg font-bold text-slate-900 mb-1">Choose an account</h4>
+            <p class="text-xs text-slate-500 mb-4">to continue to <strong>VitalPulse Health</strong></p>
+            
+            <div class="space-y-2 mb-4">
+                <button onclick="completeGoogleLogin('Daksh Sagwan', 'dakshsagwan1919@gmail.com')" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-100 border border-slate-200 text-left transition">
+                    <div class="w-9 h-9 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-sm">D</div>
+                    <div>
+                        <div class="text-sm font-bold text-slate-900">Daksh Sagwan</div>
+                        <div class="text-xs text-slate-500">dakshsagwan1919@gmail.com</div>
+                    </div>
+                </button>
+                <div class="pt-2">
+                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Or enter another Google email:</label>
+                    <div class="flex gap-2">
+                        <input type="email" id="custom-google-email" placeholder="yourname@gmail.com" class="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-emerald-500">
+                        <button onclick="loginCustomGoogle()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">Next</button>
+                    </div>
+                </div>
+            </div>
+            <button onclick="document.getElementById('google-picker-modal').classList.add('hidden')" class="w-full text-xs text-slate-500 hover:text-slate-800 py-2">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 hidden bg-slate-900 text-white text-sm font-medium px-5 py-3.5 rounded-xl shadow-xl flex items-center gap-3">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toast-msg">Action completed</span>
+    </div>
+
+    <script>
+        // --- State Management ---
+        const TARGETS = { water: 3000, calories: 2200, sleep: 8, steps: 10000 };
+        let currentUser = JSON.parse(localStorage.getItem('vp_user')) || null;
+        let authMode = 'login';
+        let healthChart = null;
+
+        function getStorageKey() {
+            return currentUser ? `vp_metrics_${currentUser.email}` : 'vp_metrics_guest';
+        }
+
+        function loadMetrics() {
+            const saved = JSON.parse(localStorage.getItem(getStorageKey()));
+            return saved || { water: 1250, calories: 1450, sleep: 7.0, steps: 6200 };
+        }
+
+        let metrics = loadMetrics();
+
+        // --- UI Updates ---
+        function renderDashboard() {
+            document.getElementById('water-val').innerText = metrics.water.toLocaleString();
+            document.getElementById('calories-val').innerText = metrics.calories.toLocaleString();
+            document.getElementById('sleep-val').innerText = metrics.sleep.toFixed(1);
+            document.getElementById('steps-val').innerText = metrics.steps.toLocaleString();
+
+            const waterPct = Math.min(100, Math.round((metrics.water / TARGETS.water) * 100));
+            const calPct = Math.min(100, Math.round((metrics.calories / TARGETS.calories) * 100));
+            const sleepPct = Math.min(100, Math.round((metrics.sleep / TARGETS.sleep) * 100));
+            const stepsPct = Math.min(100, Math.round((metrics.steps / TARGETS.steps) * 100));
+
+            document.getElementById('water-bar').style.width = `${waterPct}%`;
+            document.getElementById('calories-bar').style.width = `${calPct}%`;
+            document.getElementById('sleep-bar').style.width = `${sleepPct}%`;
+            document.getElementById('steps-bar').style.width = `${stepsPct}%`;
+
+            const totalScore = Math.round((waterPct + calPct + sleepPct + stepsPct) / 4);
+            document.getElementById('wellness-score').innerText = `${totalScore}%`;
+            document.getElementById('wellness-bar').style.width = `${totalScore}%`;
+
+            localStorage.setItem(getStorageKey(), JSON.stringify(metrics));
+            updateChart();
+        }
+
+        function updateMetric(type, amount) {
+            metrics[type] = Math.max(0, metrics[type] + amount);
+            renderDashboard();
+            showToast(`Added +${amount} to ${type}`);
+        }
+
+        function addCustomMetric(type, inputId) {
+            const val = parseFloat(document.getElementById(inputId).value);
+            if (!isNaN(val) && val > 0) {
+                metrics[type] += val;
+                document.getElementById(inputId).value = '';
+                renderDashboard();
+                showToast(`Logged ${val} kcal`);
+            }
+        }
+
+        function setCustomMetric(type, inputId) {
+            const val = parseFloat(document.getElementById(inputId).value);
+            if (!isNaN(val) && val >= 0 && val <= 24) {
+                metrics[type] = val;
+                document.getElementById(inputId).value = '';
+                renderDashboard();
+                showToast(`Sleep updated to ${val} hours`);
+            }
+        }
+
+        function resetDailyMetrics() {
+            metrics = { water: 0, calories: 0, sleep: 0, steps: 0 };
+            renderDashboard();
+            showToast("Daily logs reset to zero");
+        }
+
+        // --- BMI Calculator ---
+        function calculateBMI() {
+            const w = parseFloat(document.getElementById('bmi-weight').value);
+            const h = parseFloat(document.getElementById('bmi-height').value) / 100;
+            if (w > 0 && h > 0) {
+                const bmi = (w / (h * h)).toFixed(1);
+                let cat = 'Healthy Weight';
+                let color = 'text-emerald-600';
+                if (bmi < 18.5) { cat = 'Underweight'; color = 'text-sky-600'; }
+                else if (bmi >= 25 && bmi < 30) { cat = 'Overweight'; color = 'text-amber-600'; }
+                else if (bmi >= 30) { cat = 'Obese'; color = 'text-rose-600'; }
+
+                const scoreEl = document.getElementById('bmi-score');
+                scoreEl.innerText = bmi;
+                scoreEl.className = `text-2xl font-extrabold ${color}`;
+                document.getElementById('bmi-category').innerText = cat;
+            }
+        }
+
+        // --- Authentication System ---
+        function renderAuthUI() {
+            const navContainer = document.getElementById('auth-nav-container');
+            const greeting = document.getElementById('user-greeting');
+
+            if (currentUser) {
+                navContainer.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="hidden sm:flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl">
+                            <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center">${currentUser.name.charAt(0).toUpperCase()}</span>
+                            <span class="text-xs font-bold text-slate-800">${currentUser.name}</span>
+                        </div>
+                        <button onclick="logoutUser()" class="text-xs font-semibold text-slate-600 hover:text-rose-600 border border-slate-200 px-3 py-2 rounded-xl transition">Log Out</button>
+                    </div>
+                `;
+                greeting.innerHTML = `Synced with <strong>${currentUser.email}</strong> (${currentUser.provider})`;
+            } else {
+                navContainer.innerHTML = `
+                    <button onclick="openAuthModal('login')" class="text-sm font-semibold text-slate-700 hover:text-emerald-600 px-3 py-2 transition">Log In</button>
+                    <button onclick="openAuthModal('signup')" class="text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl shadow-sm transition">Sign Up Free</button>
+                `;
+                greeting.innerHTML = `Tracking as <strong>Guest</strong>. Log in to save data permanently.`;
+            }
+            metrics = loadMetrics();
+            renderDashboard();
+        }
+
+        function openAuthModal(mode) {
+            authMode = mode;
+            updateModalLabels();
+            document.getElementById('auth-modal').classList.remove('hidden');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('auth-modal').classList.add('hidden');
+        }
+
+        function toggleAuthMode() {
+            authMode = authMode === 'login' ? 'signup' : 'login';
+            updateModalLabels();
+        }
+
+        function updateModalLabels() {
+            const isSignup = authMode === 'signup';
+            document.getElementById('modal-title').innerText = isSignup ? 'Create Your Account' : 'Welcome Back';
+            document.getElementById('modal-subtitle').innerText = isSignup ? 'Start tracking your health & fitness metrics today' : 'Sign in to sync your health tracker across devices';
+            document.getElementById('google-btn-text').innerText = isSignup ? 'Sign up with Google' : 'Continue with Google';
+            document.getElementById('auth-submit-btn').innerText = isSignup ? 'Create Account' : 'Log In';
+            document.getElementById('auth-switch-text').innerText = isSignup ? 'Already have an account?' : "Don't have an account?";
+            document.getElementById('auth-switch-btn').innerText = isSignup ? 'Log In' : 'Sign Up';
+            document.getElementById('name-field-group').classList.toggle('hidden', !isSignup);
+        }
+
+        function handleEmailAuth(e) {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value.trim();
+            const nameInput = document.getElementById('auth-name').value.trim();
+            const name = nameInput || email.split('@')[0];
+
+            currentUser = { name, email, provider: 'Email' };
+            localStorage.setItem('vp_user', JSON.stringify(currentUser));
+            closeAuthModal();
+            renderAuthUI();
+            showToast(`Welcome, ${name}!`);
+        }
+
+        function triggerGoogleAuth() {
+            closeAuthModal();
+            document.getElementById('google-picker-modal').classList.remove('hidden');
+        }
+
+        function completeGoogleLogin(name, email) {
+            currentUser = { name, email, provider: 'Google' };
+            localStorage.setItem('vp_user', JSON.stringify(currentUser));
+            document.getElementById('google-picker-modal').classList.add('hidden');
+            renderAuthUI();
+            showToast(`Signed in with Google as ${name}`);
+        }
+
+        function loginCustomGoogle() {
+            const email = document.getElementById('custom-google-email').value.trim();
+            if (email && email.includes('@')) {
+                const name = email.split('@')[0];
+                completeGoogleLogin(name.charAt(0).toUpperCase() + name.slice(1), email);
+            }
+        }
+
+        function logoutUser() {
+            currentUser = null;
+            localStorage.removeItem('vp_user');
+            renderAuthUI();
+            showToast('Logged out successfully');
+        }
+
+        // --- Contact Form Handler ---
+        function handleContactSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('contact-name').value;
+            const email = document.getElementById('contact-email').value;
+            const topic = document.getElementById('contact-topic').value;
+            const message = document.getElementById('contact-message').value;
+
+            const mailtoLink = `mailto:dakshsagwan1919@gmail.com?subject=${encodeURIComponent(`[VitalPulse] ${topic} from ${name}`)}&body=${encodeURIComponent(`From: ${name} (${email})\n\n${message}`)}`;
+            window.location.href = mailtoLink;
+            showToast('Opening email client to send to dakshsagwan1919@gmail.com');
+            e.target.reset();
+        }
+
+        // --- Chart.js Setup ---
+        function initChart() {
+            const ctx = document.getElementById('healthChart').getContext('2d');
+            healthChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Today'],
+                    datasets: [
+                        {
+                            label: 'Steps',
+                            data: [7400, 8900, 6500, 10200, 9100, 8400, metrics.steps],
+                            backgroundColor: '#10b981',
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Water (ml)',
+                            data: [2200, 2750, 2000, 3000, 2500, 2800, metrics.water],
+                            backgroundColor: '#0ea5e9',
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+                }
+            });
+        }
+
+        function updateChart() {
+            if (healthChart) {
+                healthChart.data.datasets[0].data[6] = metrics.steps;
+                healthChart.data.datasets[1].data[6] = metrics.water;
+                healthChart.update();
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        // Initialize App
+        initChart();
+        renderAuthUI();
+    </script>
+</body>
+</html>
